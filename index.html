@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gerenciamento de Equipes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f1f1f1;
+            padding: 20px;
+            color: #333;
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+
+        .form-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .name-list {
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .name-list li {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .name-list button {
+            background-color: red;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .team-container {
+            margin-top: 20px;
+        }
+
+        .team {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .extras {
+            background-color: #ffcccc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .error {
+            color: red;
+            margin-bottom: 10px;
+        }
+
+        /* Adiciona um estilo moderno de barra de rolagem */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #007bff;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <br>
+        <h2 align="center">Desenvolvido por: <br><strong>JONAS MARTINS</strong></h2>
+        <br>
+        <br>
+        <h1>Gerenciamento de Equipes</h1>
+        <div class="error" id="error"></div>
+
+        <div class="form-group">
+            <label for="nameInput">Adicionar Nome:</label>
+            <input type="text" id="nameInput" placeholder="Digite um nome" />
+            <button onclick="addName()">Adicionar</button>
+        </div>
+
+        <ul class="name-list" id="nameList"></ul>
+
+        <div class="form-group">
+            <label for="teamCount">Número de Equipes:</label>
+            <input type="number" id="teamCount" min="1" max="10" value="1">
+        </div>
+
+        <div class="form-group">
+            <label for="teamSize">Pessoas por Equipe:</label>
+            <input type="number" id="teamSize" min="1" max="24" value="6">
+        </div>
+
+        <div class="actions">
+            <button onclick="generateTeams()">Gerar Equipes</button>
+            <button onclick="clearAll()">Limpar Tudo</button>
+        </div>
+
+        <div class="team-container" id="teamContainer"></div>
+        <div class="extras" id="extraMembers" style="display: none;">
+            <strong>Sem Equipe:</strong>
+            <span id="extraNames"></span>
+        </div>
+        <br>
+        <br>
+        <h4>OBSERVAÇÃO:<br><br>
+        Adcione apenas os jogadores de linha para gerar as equipes aleatoriamente,
+        os goleiros devem ser definidos por cada equipe.
+    </h4>
+    </div>
+
+    <script>
+        const maxNames = 24;
+        let names = JSON.parse(localStorage.getItem('names')) || [];
+        let teams = JSON.parse(localStorage.getItem('teams')) || [];
+        let extraMembers = [];
+
+        // Renderiza nomes e equipes ao carregar a página
+        window.onload = () => {
+            renderNameList();
+            renderTeams();
+            renderExtras();
+        };
+
+        // Adicionar nome
+        function addName() {
+            const nameInput = document.getElementById('nameInput');
+            const name = nameInput.value.trim();
+            const errorDiv = document.getElementById('error');
+
+            if (name === "") {
+                errorDiv.textContent = "O nome não pode estar vazio.";
+                return;
+            }
+
+            if (names.includes(name)) {
+                errorDiv.textContent = "Este nome já foi adicionado.";
+                return;
+            }
+
+            if (names.length >= maxNames) {
+                errorDiv.textContent = "Você só pode adicionar até 24 nomes.";
+                return;
+            }
+
+            names.push(name);
+            nameInput.value = "";
+            errorDiv.textContent = "";
+            localStorage.setItem('names', JSON.stringify(names));
+            renderNameList();
+        }
+
+        // Remover nome individualmente
+        function removeName(index) {
+            names.splice(index, 1);
+            localStorage.setItem('names', JSON.stringify(names));
+            renderNameList();
+        }
+
+        // Renderizar a lista de nomes
+        function renderNameList() {
+            const nameList = document.getElementById('nameList');
+            nameList.innerHTML = "";
+            names.forEach((name, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${name}`;
+                
+                // Botão de excluir
+                const removeButton = document.createElement('button');
+                removeButton.textContent = "Excluir";
+                removeButton.onclick = () => removeName(index);
+
+                li.appendChild(removeButton);
+                nameList.appendChild(li);
+            });
+        }
+
+        // Gerar equipes aleatoriamente
+        function generateTeams() {
+            const errorDiv = document.getElementById('error');
+            const teamCount = parseInt(document.getElementById('teamCount').value);
+            const teamSize = parseInt(document.getElementById('teamSize').value);
+
+            // Verificação de nomes suficientes
+            if (names.length < teamCount * teamSize) {
+                errorDiv.textContent = `Para gerar ${teamCount} equipes com ${teamSize} pessoas, você precisa de pelo menos ${teamCount * teamSize} nomes.`;
+                return;
+            }
+
+            const shuffledNames = shuffle([...names]);
+            teams = [];
+            extraMembers = [];
+
+            // Criar equipes
+            for (let i = 0; i < teamCount; i++) {
+                teams.push([]);
+            }
+
+            // Distribuir os nomes nas equipes
+            shuffledNames.forEach((name, index) => {
+                if (index < teamCount * teamSize) {
+                    teams[index % teamCount].push(name);
+                } else {
+                    extraMembers.push(name);  // Se sobrar nomes, adiciona aos "extras"
+                }
+            });
+
+            localStorage.setItem('teams', JSON.stringify(teams));
+            localStorage.setItem('extraMembers', JSON.stringify(extraMembers));
+            renderTeams();
+            renderExtras();
+            errorDiv.textContent = "";
+        }
+
+        // Renderizar equipes
+        function renderTeams() {
+            const teamContainer = document.getElementById('teamContainer');
+            teamContainer.innerHTML = "";
+
+            teams.forEach((team, index) => {
+                const teamDiv = document.createElement('div');
+                teamDiv.classList.add('team');
+                teamDiv.innerHTML = `<strong>Equipe ${index + 1}:</strong> ${team.join(', ')}`;
+                teamContainer.appendChild(teamDiv);
+            });
+        }
+
+        // Renderizar os membros que não estão em equipes
+        function renderExtras() {
+            const extraContainer = document.getElementById('extraMembers');
+            const extraNames = document.getElementById('extraNames');
+
+            if (extraMembers.length > 0) {
+                extraContainer.style.display = 'block';
+                extraNames.textContent = extraMembers.join(', ');
+            } else {
+                extraContainer.style.display = 'none';
+            }
+        }
+
+        // Função para embaralhar os nomes
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Limpar tudo
+        function clearAll() {
+            names = [];
+            teams = [];
+            extraMembers = [];
+            localStorage.removeItem('names');
+            localStorage.removeItem('teams');
+            localStorage.removeItem('extraMembers');
+            renderNameList();
+            renderTeams();
+            renderExtras();
+            document.getElementById('error').textContent = "";
+        }
+    </script>
+    
+    
+</body>
+</html>
